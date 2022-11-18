@@ -1,10 +1,10 @@
+import java.net.SocketException;
 
 public class AdventureRunner
 {
 
-	public static void main(String[] args)
-	{
-		Room room = new Room(1.0,10000);
+	public static void main(String[] args) throws SocketException {
+		Room room = new Room();
 		
 		Entity player = new Entity("Player1",100,100,10,0.6,1000,5000);
 		player.setAction(1);
@@ -13,8 +13,5 @@ public class AdventureRunner
 		player.setAction(0);
 		room.addPlayer(player);
 		room.start();
-		
-
 	}
-
 }

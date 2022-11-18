@@ -1,8 +1,8 @@
 
 public class Entity
 {
-	private String name = "None";
-	private int health = 100;
+	String name = "None";
+	int health = 100;
 	private int max_health = 100;
 	private int damage = 10;
 	private double hit_chance = 0.6;
