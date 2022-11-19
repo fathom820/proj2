@@ -20,8 +20,21 @@ public class Client {
         address = InetAddress.getByName(prompt("Enter the IP of the server you'd like to join."));
         String userName = prompt("Enter the name of your player.");
 
-        sendMsg(userName);
-        
+        sendMsg(userName + ",300,300,10,0.6,1000,5000");
+
+        while(true) {
+            String msg = prompt("Enter action.");
+            sendMsg(msg);
+            if (msg.equals("end")) {
+//                socket.close();
+                break;
+            }
+
+
+//            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 4446);
+//            socket.receive(packet);
+//            System.out.println(packet.getLength());
+        }
     }
 
     private static void sendMsg(String msg) throws IOException {

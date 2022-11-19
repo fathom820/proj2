@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -9,12 +10,8 @@ import java.util.ArrayList;
  */
 public class Room extends Thread
 {
-	/* Needed for network functions */
-	private DatagramSocket socket; // In UDP messages are encapsulated in DatagramPackets, which are sent through DatagramSockets.
-	private byte[] buffer; // All messages are wrapped in byte array and sent in DatagramPackets through DatagramSockets.
-
 	private ArrayList<Entity> creatures = new ArrayList<>();
-	private ArrayList<Entity> players = new ArrayList<>();
+	public ArrayList<Entity> players = new ArrayList<>();
 	private ArrayList<String> messages = new ArrayList<>();
 	private double spawn_chance = 0.05;
 	private int check_spawn = 1000; // Kept in milliseconds.
@@ -29,13 +26,30 @@ public class Room extends Thread
 	}
 
 	public Room() throws SocketException {
-		buffer = new byte[256];
-		socket = new DatagramSocket(4445); // new socket on port 4445
 	}
 
 	public void addPlayer(Entity player) {
 		players.add(player);
 		messages.add(player.getName()+" has entered the room.");
+	}
+
+	/**
+	 * To be used when a player disconnects as opposed to dying.
+	 * @author Michael Frank
+	 * @param player
+	 */
+	public void removePlayer(Entity player) {
+		players.remove(player);
+		messages.add(player.getName() + " has left the room.");
+	}
+
+	public Entity getPlayerByName(String name) {
+		for (Entity e : players) {
+			if (e.name.equals(name)) {
+				return e;
+			}
+		}
+		return null;
 	}
 	
 	private void attackRandomEntity(Entity attacker,ArrayList<Entity> options) {
@@ -53,10 +67,11 @@ public class Room extends Thread
 			
 	}
 	
-	private void printMessages() {
+	private void printMessages() throws IOException {
 		while (messages.size() > 0) {
 			//TODO: send these to clients as well
 			System.out.println(messages.get(0));
+//			Server.sendToClients(messages.get(0));
 			messages.remove(0);
 		}
 	}
@@ -86,9 +101,6 @@ public class Room extends Thread
 		long lastSpawnCheck = startTime;
 
 		while (run) {
-			//TODO: check connections and players
-
-
 			presentTime = System.currentTimeMillis();
 			if ((presentTime - lastSpawnCheck) > check_spawn) {
 				double check = Math.random();
@@ -105,14 +117,22 @@ public class Room extends Thread
 			processActions(creatures,players);
 			
 			updateCreatureAction();
-			printMessages();
+			try {
+				printMessages();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 	
 	public void setRun(boolean value) {
 		run = value;
 	}
-	
+
+	public ArrayList<Entity> getPlayers() {
+		return players;
+	}
+
 	private void updateCreatureAction() {
 		for (Entity creature : creatures) {
 			long lastAttack = creature.getLastAttack();
