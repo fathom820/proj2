@@ -1,8 +1,9 @@
+import com.sun.source.doctree.EntityTree;
+
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * There should only be one of these running as a server and players should connect to it as clients.
@@ -52,7 +53,7 @@ public class Room extends Thread
 		return null;
 	}
 	
-	private void attackRandomEntity(Entity attacker,ArrayList<Entity> options) {
+	private void attackRandomEntity(Entity attacker,ArrayList<Entity> options) throws IOException {
 		int index = (int)(Math.random()*options.size());
 		Entity target = options.get(index);
 		int targetHealth = target.getHealth();
@@ -61,6 +62,24 @@ public class Room extends Thread
 		attacker.setLastAttack(presentTime);
 		if (target.getHealth() == 0)
 		{
+			// bit of a cheap workaround, because the player could give themself a name like "Creature1"
+			// and the game wouldn't tell their client that they died.
+			// To compensate, the matching client for this server won't let the player input such a name.
+		    if (options.get(index).getName().length() < 9 || !options.get(index).getName().substring(0, 8).equals("Creature")) {
+		        for (Map.Entry<String, Entity> entry : Server.playerIpMap.entrySet()) {
+					if (entry.getValue().getHealth() <= 0) {
+						String fullIp = entry.getKey();
+						InetSocketAddress socketAddress = new InetSocketAddress(
+								InetAddress.getByName(fullIp.split(":")[0]),
+								Integer.parseInt(fullIp.split(":")[1])
+						);
+						String dead = "dead";
+						byte[] buffer = dead.getBytes();
+						DatagramPacket packet = new DatagramPacket(buffer, buffer.length, socketAddress);
+						Server.socket.send(packet);
+					}
+				}
+			}
 			options.remove(index);
 			messages.add(target.getName() + " killed.");
 		}
@@ -69,14 +88,13 @@ public class Room extends Thread
 	
 	private void printMessages() throws IOException {
 		while (messages.size() > 0) {
-			//TODO: send these to clients as well
 			System.out.println(messages.get(0));
-//			Server.sendToClients(messages.get(0));
+			Server.sendToClients(messages.get(0));
 			messages.remove(0);
 		}
 	}
 	
-	private void processActions(ArrayList<Entity> entities,ArrayList<Entity> targets) {
+	private void processActions(ArrayList<Entity> entities,ArrayList<Entity> targets) throws IOException {
 		for (Entity entity : entities) {
 			int action = entity.getAction();
 			if ((action == 1) && (targets.size() > 0)) {
@@ -112,10 +130,14 @@ public class Room extends Thread
 				}
 				lastSpawnCheck = presentTime;
 			}
-			
-			processActions(players,creatures);
-			processActions(creatures,players);
-			
+
+			try {
+				processActions(players,creatures);
+				processActions(creatures, players);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
 			updateCreatureAction();
 			try {
 				printMessages();

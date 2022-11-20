@@ -1,3 +1,14 @@
+/**
+ * This class makes up the bulk of the code I wrote.
+ * Instead of trying to transform the Room code into a server,
+ * I largely left it as is (besides adding a couple functions)
+ * and instead made a basic interface for the Server and Room
+ * to communicate. That way, the network functionality and the
+ * game functionality are mostly compartmentalized,
+ * in typical Java fashion.
+ * @author Michael Frank
+ */
+
 import java.io.IOException;
 import java.net.*;
 import java.util.HashMap;
@@ -5,20 +16,21 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class Server {
-    // variables
+    // game room
     static Room room;
+
+    // maps IP addresses (stored as Strings) to Players
     static Map<String, Entity> playerIpMap = new HashMap<>();
-    static boolean debug = true;
+    static boolean debug = true; // enables printing of debug messages server-side
     static DatagramSocket socket;
+
+    // need to move this inside main()
     static {
         try {
             socket = new DatagramSocket(4446);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public Server() throws SocketException {
     }
 
     /**
@@ -52,33 +64,37 @@ public class Server {
         while(ipIterator.hasNext()) {
             Map.Entry mapElement = (Map.Entry)ipIterator.next();
             String ip = mapElement.getKey().toString();
-
             byte[] buffer = s.getBytes();
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(ip), 4446);
+            InetSocketAddress socketAddress = new InetSocketAddress (
+                    InetAddress.getByName(ip.split(":")[0]),
+                    Integer.parseInt(ip.split(":")[1])
+            );
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, socketAddress);
             socket.send(packet);
         }
     }
 
     public static void main(String[] args) throws IOException {
+        // create game room
         Room room = new Room();
         room.start();
 
         // networking
         byte[] buffer = new byte[256];
-
         DatagramPacket request = new DatagramPacket(buffer, buffer.length);
         String clientMsg;
 
         while (true) {
             socket.receive(request);
             clientMsg = new String(buffer, 0, request.getLength());
-            String ip = request.getSocketAddress().toString().substring(1).split(":")[0];
+            String ip = request.getSocketAddress().toString().substring(1);
 
             if (debug) System.out.println(request.getSocketAddress() + ": " + clientMsg);
 
             // test for message type
             switch(clientMsg) {
                 case "-1":
+                    // Least verbose function call in Java... lol
                     room.getPlayerByName(String.valueOf(playerIpMap.get(ip).getName())).setAction(-1);
                     break;
                 case "0":
@@ -90,11 +106,12 @@ public class Server {
                 case "2":
                     room.getPlayerByName(String.valueOf(playerIpMap.get(ip).getName())).setAction(2);
                     break;
+                // End connection. Removes player from server's IP map and room's player list.
                 case "end":
                     playerIpMap.remove(request.getSocketAddress().toString());
-                    room.getPlayerByName(String.valueOf(playerIpMap.get(ip).getName())).takeDamage(5000);
                     room.removePlayer(room.getPlayerByName(String.valueOf(playerIpMap.get(ip).getName())));
                     break;
+                // any other message will be interpreted as a message to create a new player.
                 default:
                     System.out.println("Creating new player");
                     Entity newPlayer = createPlayerFromString(clientMsg);
