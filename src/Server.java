@@ -63,9 +63,7 @@ public class Server {
         Room room = new Room();
         room.start();
 
-
         // networking
-
         byte[] buffer = new byte[256];
 
         DatagramPacket request = new DatagramPacket(buffer, buffer.length);

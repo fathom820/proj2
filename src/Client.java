@@ -31,9 +31,9 @@ public class Client {
             }
 
 
-//            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 4446);
-//            socket.receive(packet);
-//            System.out.println(packet.getLength());
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 4446);
+            socket.receive(packet);
+            System.out.println(packet.getLength());
         }
     }
 
