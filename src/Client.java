@@ -2,6 +2,7 @@
  * This class handles all client interactions.
  * It just acts as a terminal, sending strings to
  * the server and receiving strings from the server.
+ * @author Michael Frank
  */
 
 import java.io.IOException;
@@ -16,26 +17,36 @@ public class Client {
     private static Scanner userIn;
     private final static int PORT = 4446;
 
+    private static boolean connectionStatus = false;
+
     // run client process
     public static void main(String[] args) throws IOException {
         socket = new DatagramSocket();
         userIn = new Scanner(System.in);
 
-        address = InetAddress.getByName(prompt("Enter the IP of the server you'd like to join."));
-        String userName = prompt("Enter the name of your player.");
+        while (true) {
+            if (!connectionStatus) {
+                address = InetAddress.getByName(prompt("Enter the IP of the server you'd like to join."));
+                String userName = prompt("Enter the name of your player.");
+                sendMsg(userName + ",100,100,10,0.6,1000,5000"); // send message to create player
 
-        // send a message to the server to initialize a new player
-        sendMsg(userName + ",100,100,10,0.6,1000,5000");
+                // start thread to handle packets sent by server so that user input isn't blocked
+                ClientInterfaceHandler cih = new ClientInterfaceHandler(socket, buffer, address, PORT);
+                cih.start();
+                connectionStatus = true;
 
-        // start thread to handle packets sent by server so that user input isn't blocked
-        ClientInterfaceHandler cih = new ClientInterfaceHandler(socket, buffer, address, PORT);
-        cih.start();
-
-        while(true) {
-            String msg = prompt("Enter action.");
-            sendMsg(msg);
-            if (msg.equals("end")) {
-                break;
+            } else {
+                String msg = null;
+                if (connectionStatus) {
+                    msg = prompt("Enter action (-1 = do nothing, 0 = defend, 1 = attack, 2 = heal)");
+                }
+                if (connectionStatus) {
+                    sendMsg(msg);
+                }
+                if  (msg.equals("end")) {
+                    System.out.println("Disconnecting from server.");
+                    connectionStatus = false;
+                }
             }
         }
     }
@@ -63,5 +74,9 @@ public class Client {
     public static String prompt(String msg) {
         System.out.print(msg + "\n> ");
         return userIn.nextLine();
+    }
+
+    public static void setConnectionStatus(boolean connectionStatus) {
+        Client.connectionStatus = connectionStatus;
     }
 }

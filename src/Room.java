@@ -37,7 +37,7 @@ public class Room extends Thread
 	/**
 	 * To be used when a player disconnects as opposed to dying.
 	 * @author Michael Frank
-	 * @param player
+	 * @param player player to remove
 	 */
 	public void removePlayer(Entity player) {
 		players.remove(player);
@@ -77,6 +77,9 @@ public class Room extends Thread
 						byte[] buffer = dead.getBytes();
 						DatagramPacket packet = new DatagramPacket(buffer, buffer.length, socketAddress);
 						Server.socket.send(packet);
+						String logMsg = "action=dead; ip_from=" + Server.socket.getLocalSocketAddress().toString() + "; ip_to=" + socketAddress.toString() + "\n";
+						Server.fileWriter.write(logMsg);
+						Server.fileWriter.flush();
 					}
 				}
 			}
@@ -139,7 +142,8 @@ public class Room extends Thread
 			}
 
 			updateCreatureAction();
-			try {
+			try
+			{
 				printMessages();
 			} catch (IOException e) {
 				throw new RuntimeException(e);

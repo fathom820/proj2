@@ -1,4 +1,6 @@
-
+/**
+ * @author Dr. Girard
+ */
 public class Entity
 {
 	String name = "None";

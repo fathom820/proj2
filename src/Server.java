@@ -9,6 +9,8 @@
  * @author Michael Frank
  */
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
 import java.util.HashMap;
@@ -32,6 +34,9 @@ public class Server {
             throw new RuntimeException(e);
         }
     }
+
+    public static File logFile;
+    public static FileWriter fileWriter;
 
     /**
      * Creates a player from an initialization string sent by client.
@@ -84,6 +89,17 @@ public class Server {
         DatagramPacket request = new DatagramPacket(buffer, buffer.length);
         String clientMsg;
 
+        // file writing
+        logFile = new File("session.log");
+        try {
+            if (logFile.createNewFile()) System.out.println("Created new log file at " + logFile.getAbsolutePath());
+            else { logFile.delete(); logFile.createNewFile(); System.out.println("Cleared log file at " + logFile.getAbsolutePath()); }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        fileWriter = new FileWriter(logFile.getAbsolutePath());
+
+
         while (true) {
             socket.receive(request);
             clientMsg = new String(buffer, 0, request.getLength());
@@ -91,10 +107,15 @@ public class Server {
 
             if (debug) System.out.println(request.getSocketAddress() + ": " + clientMsg);
 
+            // write message info to log
+            String logMsg = "action=" + clientMsg + "; ip_from=" + ip + "; ip_to=" + socket.getLocalSocketAddress() + "\n";
+            fileWriter.write(logMsg);
+            fileWriter.flush();
+
             // test for message type
             switch(clientMsg) {
                 case "-1":
-                    // Least verbose function call in Java... lol
+                    // Stereotypical verbose Java function call, lol
                     room.getPlayerByName(String.valueOf(playerIpMap.get(ip).getName())).setAction(-1);
                     break;
                 case "0":
@@ -118,7 +139,6 @@ public class Server {
                     room.addPlayer(newPlayer);
                     playerIpMap.put(ip, newPlayer);
             }
-
         }
     }
 }

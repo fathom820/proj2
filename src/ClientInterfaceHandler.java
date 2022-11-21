@@ -49,7 +49,8 @@ public class ClientInterfaceHandler extends Thread {
              * the respective input prompts.
              */
             if (serverMsg.equals("dead")) {
-                System.out.println("You are dead.");
+                System.out.println("You died! Disconnecting from server.\nPress enter to play again.");
+                Client.setConnectionStatus(false);
                 break;
             }
         }
