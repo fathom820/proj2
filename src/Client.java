@@ -37,9 +37,7 @@ public class Client {
 
             } else {
                 String msg = null;
-                if (connectionStatus) {
-                    msg = prompt("Enter action (-1 = do nothing, 0 = defend, 1 = attack, 2 = heal)");
-                }
+                msg = prompt("Enter action (-1 = do nothing, 0 = defend, 1 = attack, 2 = heal)");
                 if (connectionStatus) {
                     sendMsg(msg);
                 }

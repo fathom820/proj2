@@ -92,7 +92,7 @@ public class Room extends Thread
 	private void printMessages() throws IOException {
 		while (messages.size() > 0) {
 			System.out.println(messages.get(0));
-			Server.sendToClients(messages.get(0));
+//			Server.sendToClients(messages.get(0));
 			messages.remove(0);
 		}
 	}
